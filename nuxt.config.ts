@@ -3,6 +3,7 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   modules: [
     'nuxt-primevue',
+    '@nuxt/eslint'
   ],
   primevue: {
       /* Options */

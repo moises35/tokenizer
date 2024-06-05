@@ -1,28 +1,28 @@
 <template>
   <main>
     <h1>Tokenizador</h1>
-    <div class="form-file" v-if="!isFileProcessed">
+    <div v-if="!isFileProcessed" class="form-file">
       <p>Seleccione un archivo de entrada en formato
         <Tag severity="success" value=".txt" />
         para procesar los lexemas:
       </p>
-      <FileUpload choose-label="Subir" class="btn-file" mode="basic" name="text[]" customUpload :maxFileSize="1000000" @uploader="uploadFile" />
+      <FileUpload choose-label="Subir" class="btn-file" mode="basic" name="text[]" custom-upload :max-file-size="1000000" @uploader="uploadFile" />
     </div>
 
-    <form class="form-tokens" @submit.prevent="saveLexeme" v-else>
+    <form v-else class="form-tokens" @submit.prevent="saveLexeme">
         <p v-if="indexLexeme < listLexemes.length" class="mb">Por favor, seleccione el grupo al cual pertenece el lexema: 
-          <Tag severity="success" :value="lexemeActual"></Tag>
+          <Tag severity="success" :value="lexemeActual"/>
         </p>
         <p v-else class="mb">Lexemas procesados!</p>
 
         <div class="flex">
           <div>
             <div class="radio-buttons-container">
-              <div class="radio-button-container" v-for="token in TOKENS" :key="token">
+              <div v-for="token in TOKENS" :key="token" class="radio-button-container">
                 <RadioButton 
-                  :disabled="indexLexeme >= listLexemes.length"
                   v-model="tokenSelected"
-                  :inputId="token"
+                  :disabled="indexLexeme >= listLexemes.length"
+                  :input-id="token"
                   name="tokens"
                   :value="token" 
                 />
@@ -40,7 +40,7 @@
           </div>
           <div class="progress-container">
             <p>Porcentaje de lexemas procesados:</p>
-            <Knob v-model="progressLexemeProcessed" :min="0" :max="100" readonly :valueTemplate="`${progressLexemeProcessed}%`" />
+            <Knob v-model="progressLexemeProcessed" :min="0" :max="100" readonly :value-template="`${progressLexemeProcessed}%`" />
             <p>Quedan {{ listLexemes.length - indexLexeme }} lexemas por procesar</p>
           </div>
         </div>

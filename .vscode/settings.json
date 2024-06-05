@@ -1,0 +1,17 @@
+{
+  "eslint.experimental.useFlatConfig": true,
+  "javascript.validate.enable": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.fixAll.stylelint": "explicit"
+  },
+  "[vue]": {
+    "editor.formatOnSave": false,
+  },
+  "prettier.enable": false,
+  "[json][jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+  "editor.formatOnSave": false,
+}
