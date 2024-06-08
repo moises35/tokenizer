@@ -65,7 +65,9 @@ const isFileProcessed = ref(false)
 
 const uploadFile = async (e: FileUploadUploaderEvent) => {
   listLexemes.value = await processFile(e, isFileProcessed)
+
   lexemeActual.value = listLexemes.value[indexLexeme.value]
+  
   progressLexemeProcessed.value = calculateProgress(listLexemes.value.length, indexLexeme.value)
 }
 

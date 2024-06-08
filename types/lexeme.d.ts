@@ -5,5 +5,5 @@ interface Lexeme {
 
 interface TableOfSymbols {
   token: string;
-  lexemes: Lexeme;
+  lexemes: Lexeme[];
 }

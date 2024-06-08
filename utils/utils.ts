@@ -6,8 +6,12 @@ export const processFile = (file: FileUploadUploaderEvent, isProcessed: Ref<bool
   let textFile = ''
 
   return new Promise((resolve, reject) => {
+    // Leemos el archivo
     readFile(fileData).then((data) => {
+      // Limpiamos el texto
       textFile = cleanText(data)
+
+      // Convertimos el texto en lexemas
       lexemes.push(...textToLexemes(textFile))
       isProcessed.value = true
       resolve(lexemes)
