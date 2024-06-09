@@ -10,7 +10,7 @@
     </div>
 
     <form v-else class="form-tokens" @submit.prevent="saveLexeme">
-        <p v-if="indexLexeme < listLexemes.length" class="mb">Por favor, seleccione el grupo al cual pertenece el lexema: 
+        <p v-if="indexLexeme < lexemesToProcess.length" class="mb">Por favor, seleccione el grupo al cual pertenece el lexema: 
           <Tag severity="success" :value="lexemeActual"/>
         </p>
         <p v-else class="mb">Lexemas procesados!</p>
@@ -21,7 +21,7 @@
               <div v-for="token in TOKENS" :key="token" class="radio-button-container">
                 <RadioButton 
                   v-model="tokenSelected"
-                  :disabled="indexLexeme >= listLexemes.length"
+                  :disabled="indexLexeme >= lexemesToProcess.length"
                   :input-id="token"
                   name="tokens"
                   :value="token" 
@@ -35,13 +35,18 @@
               outlined
               icon="pi pi-save"
               class="btn-save" 
-              :disabled="indexLexeme >= listLexemes.length || tokenSelected == ''"
+              :disabled="indexLexeme >= lexemesToProcess.length || tokenSelected == ''"
             />
           </div>
           <div class="progress-container">
             <p>Porcentaje de lexemas procesados:</p>
             <Knob v-model="progressLexemeProcessed" :min="0" :max="100" readonly :value-template="`${progressLexemeProcessed}%`" />
-            <p>Quedan {{ listLexemes.length - indexLexeme }} lexemas por procesar</p>
+            <p>Quedan {{ lexemesToProcess.length - indexLexeme }} lexemas por procesar</p>
+            <p v-if="processedLexemes.length > 0">
+              <span v-if="processedLexemes.length == 1">Se ha precargado {{ processedLexemes.length }} lexema del diccionario</span>
+              <span v-else>Fueron precargados {{ processedLexemes.length }} lexemas del diccionario</span>
+            </p>
+            <p v-else>Ningun lexema fue precargado desde el diccionario</p>
           </div>
         </div>
     </form>
@@ -59,29 +64,33 @@ const tokenSelected = ref('')
 const lexemeActual = ref('')
 const indexLexeme = ref(0)
 const progressLexemeProcessed = ref(0) 
-const listLexemes = ref<string[]>([])
+const lexemesToProcess = ref<LexemeMetadata[]>([])
+const processedLexemes = ref<LexemeMetadata[]>([])
 const isFileProcessed = ref(false)
 
 
 const uploadFile = async (e: FileUploadUploaderEvent) => {
-  listLexemes.value = await processFile(e, isFileProcessed)
+  const aux = await processFile(e, isFileProcessed);
 
-  lexemeActual.value = listLexemes.value[indexLexeme.value]
+  lexemesToProcess.value = aux.lexemesToProcess;
+  processedLexemes.value = aux.processedLexemes;
+
+  lexemeActual.value = lexemesToProcess.value[indexLexeme.value].lexeme
   
-  progressLexemeProcessed.value = calculateProgress(listLexemes.value.length, indexLexeme.value)
+  progressLexemeProcessed.value = calculateProgress(lexemesToProcess.value.length + processedLexemes.value.length, indexLexeme.value + processedLexemes.value.length)
 }
 
 const saveLexeme = () => {
   saveLexemeInToken(tokenSelected.value, lexemeActual.value)
   
-  if (indexLexeme.value < listLexemes.value.length - 1) {
+  if (indexLexeme.value < lexemesToProcess.value.length - 1) {
     indexLexeme.value++
-    lexemeActual.value = listLexemes.value[indexLexeme.value]
-    progressLexemeProcessed.value = calculateProgress(listLexemes.value.length, indexLexeme.value)
+    lexemeActual.value = lexemesToProcess.value[indexLexeme.value].lexeme
+    progressLexemeProcessed.value = calculateProgress(lexemesToProcess.value.length + processedLexemes.value.length, indexLexeme.value + processedLexemes.value.length)
   }
   else {
     indexLexeme.value++
-    progressLexemeProcessed.value = calculateProgress(listLexemes.value.length, indexLexeme.value)
+    progressLexemeProcessed.value = calculateProgress(lexemesToProcess.value.length + processedLexemes.value.length, indexLexeme.value + processedLexemes.value.length)
   }
 }
 

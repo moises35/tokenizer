@@ -1,0 +1,42 @@
+[
+  {
+    "token": "articulo",
+    "lexemes": [
+      {
+        "lexeme": "esto",
+        "positions": [
+          "TXT-1",
+          "TXT-2"
+        ]
+      }
+    ]
+  },
+  {
+    "token": "sustantivo",
+    "lexemes": []
+  },
+  {
+    "token": "verbo",
+    "lexemes": [
+      {
+        "lexeme": "es",
+        "positions": [
+          "TXT-1",
+          "TXT-2"
+        ]
+      }
+    ]
+  },
+  {
+    "token": "adjetivo",
+    "lexemes": []
+  },
+  {
+    "token": "adverbio",
+    "lexemes": []
+  },
+  {
+    "token": "otros",
+    "lexemes": []
+  }
+]
