@@ -3,9 +3,9 @@ const fs = require('fs');
 const { entryNumber } = require('./../data.json');
 const DATA_JSON_PATH = 'data.json';
 const DICTIONARY_JSON_PATH = 'dictionary.json';
+const OUTPUT_PATH = 'outputs';
 
-
-const getLexemes = (req, res) => {
+const getDictionary = (req, res) => {
   // Leer el archivo .json
   const data = fs.readFileSync(DICTIONARY_JSON_PATH);
   const dictionary = JSON.parse(data);
@@ -18,6 +18,22 @@ const getLexemes = (req, res) => {
 
   res.json(response);
 };
+
+const setDictionary = (req, res) => {
+  const { dictionary, outputFile } = req.body;
+
+  if (!fs.existsSync(`${__dirname}/../${OUTPUT_PATH}`)) {
+    fs.mkdirSync(`${__dirname}/../${OUTPUT_PATH}`);
+  }
+
+  const outputFilePath = `${__dirname}/../${OUTPUT_PATH}/output${entryNumber}.json`;
+
+  fs.writeFileSync(DICTIONARY_JSON_PATH, JSON.stringify(dictionary));
+  fs.writeFileSync(outputFilePath, JSON.stringify(outputFile));
+
+  setNumberOfEntries();
+  res.json({ message: 'Dictionary updated', dictionary: dictionary, outputFile: outputFilePath});
+}
 
 const clearData = (req, res) => {
   fs.writeFileSync(DATA_JSON_PATH, JSON.stringify({ entryNumber: 1 }));
@@ -49,4 +65,4 @@ const setNumberOfEntries = () => {
 }
 
 
-module.exports = { getLexemes, clearData };
+module.exports = { getDictionary, setDictionary, clearData };

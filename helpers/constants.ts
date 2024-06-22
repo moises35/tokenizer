@@ -7,4 +7,4 @@ export const TOKENS: string[] = [
   'otros',
 ]
 
-export const POSITION_NOTATION: string = 'TXT#-N' 
+export const POSITION_FORMAT: string = 'TXT#-N' 

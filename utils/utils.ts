@@ -1,24 +1,20 @@
 /* eslint-disable brace-style */
 import type { FileUploadUploaderEvent } from 'primevue/fileupload'
+import { POSITION_FORMAT, TOKENS } from '@/helpers/constants'
 
 const URL_BACKEND = 'http://localhost:8000';
+let numberOfEntries = 0;
+const tableOfSymbols: TableOfSymbols[] = []
 
 export const processFile = (file: FileUploadUploaderEvent, isProcessed: Ref<boolean>): Promise<{ lexemesToProcess: LexemeMetadata[], processedLexemes: LexemeMetadata[] }> => {
   const fileData = file.files[0] 
   const lexemes: LexemeMetadata[] = []
-  const tableOfSymbols: TableOfSymbols[] = []
   
   return new Promise((resolve, reject) => {
-    const lexemesToProcess: LexemeMetadata[] = []
-    const processedLexemes: LexemeMetadata[] = []
-    
     // Leemos el archivo
     readFile(fileData).then((textFile) => {
       // Convertimos el texto a lexemas
       lexemes.push(...textToLexemes(textFile))
-
-      console.log('lexemes luego de eliminar los duplicados: ')
-      console.log(lexemes)
 
       // Hacemos una llamada a la API para obtener el diccionario de datos
       fetch(`${URL_BACKEND}/api`).then((response) => {
@@ -26,16 +22,12 @@ export const processFile = (file: FileUploadUploaderEvent, isProcessed: Ref<bool
       }).then((data) => {
         const dictionary = ResponseToTableOfSymbols(data.dictionary)
 
+        numberOfEntries = data.numberOfEntries
+
         tableOfSymbols.push(...dictionary)
 
-        // Comparamos el diccionario de datos con los lexemas, separamos los lexemas que no estén en el diccionario y los que si estan
+        // Comparamos el diccionario de datos con los lexemas
         const { lexemesToProcess, processedLexemes } = compareDictionaryWithLexemes(tableOfSymbols, lexemes)
-
-
-        console.log('lexemesToProcess: ')
-        console.log(lexemesToProcess)
-        console.log('processedLexemes: ')
-        console.log(processedLexemes)
 
         isProcessed.value = true
         resolve({
@@ -87,9 +79,6 @@ const textToLexemes = (text: string): LexemeMetadata[] => {
     }
   })
 
-  console.log('lexemes luego del textsplit: ')
-  console.log(lexemes)
-
   const lexemesWithoutDuplicates = sortGroupRemoveDuplicates(lexemes)
 
   return lexemesWithoutDuplicates
@@ -124,33 +113,23 @@ const sortGroupRemoveDuplicates = (lexemes: LexemeMetadata[]): LexemeMetadata[] 
   return finalLexemes
 }
 
-export const calculateProgress = (totalLexemes: number, analyzedLexemes: number): number => {
-  const progress = (analyzedLexemes / totalLexemes) * 100
-
-  return Math.floor(progress)
-}
-
-export const saveLexemeInToken = (selectedToken: string, lexeme: string) => {
-}
-
-
 const compareDictionaryWithLexemes = (dictionary: TableOfSymbols[], lexemes: LexemeMetadata[]) => {
   const lexemesToProcess: LexemeMetadata[] = [] // Lexemes that are not in the dictionary
   const processedLexemes: LexemeMetadata[] = [] // Lexemes that are in the dictionary
 
-  console.log('diccionario')
-  console.log(dictionary)
   lexemes.forEach((lexeme) => {
     lexeme.lexemePosition = undefined;
     lexeme.token = undefined;
+    lexeme.tokenPosition = undefined;
 
     // En caso de que se encuentre el lexema,  obtenememos el token al que pertenece y el indice en el array de lexemes
-    dictionary.find((element) => {
+    dictionary.find((element, index) => {
       const lexemePosition: number = element.lexemes.findIndex((lexemeElement) => lexemeElement.lexeme === lexeme.lexeme)
 
       if (lexemePosition !== -1) {
         lexeme.token = element.token
         lexeme.lexemePosition = lexemePosition
+        lexeme.tokenPosition = index
 
         return true
       } 
@@ -161,3 +140,107 @@ const compareDictionaryWithLexemes = (dictionary: TableOfSymbols[], lexemes: Lex
 
   return { lexemesToProcess, processedLexemes }
 }
+
+const setPositionFormat = (numOfEntry: number, position: number | number[]): string[] => {
+  if (Array.isArray(position)) {
+    return position.map((pos) => {
+      return POSITION_FORMAT.replace('#', numOfEntry.toString()).replace('N', pos.toString())
+    })
+  }
+
+  return [ POSITION_FORMAT.replace('#', numOfEntry.toString()).replace('N', position.toString()) ]
+}
+
+export const calculateProgress = (totalLexemes: number, analyzedLexemes: number): number => {
+  const progress = (analyzedLexemes / totalLexemes) * 100
+
+  // si el progreso es NaN, retornamos 0
+  return isNaN(progress) ? 0 : Math.floor(progress) 
+}
+
+// 
+export const saveLexemesIntoDictionary = (previouslyProcessedLexemes: LexemeMetadata[], lexemesProcessedNow: LexemeMetadata[]): Promise<{ result: ResultReport[], outputFile: string }> => {
+  const newsLexemes: LexemeMetadata[] = [ ...previouslyProcessedLexemes, ...lexemesProcessedNow ]
+  let result: ResultReport[] = []
+  let outputPathFile = ''
+  const outputFile: TableOfSymbols[] = []
+
+  result = generateReport(previouslyProcessedLexemes, lexemesProcessedNow)
+
+  TOKENS.forEach((token) => outputFile.push({ token, lexemes: [] }))
+
+  // Agregamos a tableOfSymbols los nuevos lexemas
+  newsLexemes.forEach((lexeme) => {
+    if (lexeme.lexemePosition !== undefined) {
+      tableOfSymbols[lexeme.tokenPosition!].lexemes[lexeme.lexemePosition].positions.push(...setPositionFormat(numberOfEntries, lexeme.index))
+      outputFile[lexeme.tokenPosition!].lexemes.push({
+        lexeme: lexeme.lexeme,
+        positions: [ ...setPositionFormat(numberOfEntries, lexeme.index) ],
+      })
+
+    } else {
+      tableOfSymbols[lexeme.tokenPosition!].lexemes.push({
+        lexeme: lexeme.lexeme,
+        positions: [ ...setPositionFormat(numberOfEntries, lexeme.index) ],
+      })
+
+      outputFile[lexeme.tokenPosition!].lexemes.push({
+        lexeme: lexeme.lexeme,
+        positions: [ ...setPositionFormat(numberOfEntries, lexeme.index) ],
+      })
+    }
+  })
+
+  return new Promise((resolve, reject) => {
+    fetch(`${URL_BACKEND}/api`, {
+      method: 'POST',
+      body: JSON.stringify({
+        dictionary: tableOfSymbols,
+        outputFile: outputFile,
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }).then((response) => {
+      return response.json()
+    }).then((data) => {
+      outputPathFile = data.outputFile
+      resolve({
+        result,
+        outputFile: outputPathFile,
+      })
+    }).catch((error) => {
+      // eslint-disable-next-line no-console
+      console.error('Error al guardar el diccionario de datos:', error)
+      reject(error)
+    })
+  })
+  // Guardamos el diccionario de datos
+}
+
+
+const generateReport = (previouslyProcessedLexemes: LexemeMetadata[], lexemesProcessedNow: LexemeMetadata[]): ResultReport[] => {
+  const results: ResultReport[] = []
+
+  TOKENS.forEach((token, index) => {
+    const lexemesToken: LexemeMetadata[] = previouslyProcessedLexemes.filter((lexeme) => lexeme.token === token)
+    const lexemesProcessedNowToken: LexemeMetadata[] = lexemesProcessedNow.filter((lexeme) => lexeme.token === token)
+    const sumOfLexemes = lexemesToken.length + lexemesProcessedNowToken.length
+
+    const resultReport: ResultReport = {
+      token: token,
+      percentageOfPreprocessedLexemes: `${calculateProgress(sumOfLexemes, lexemesToken.length)}%`,
+      percentageOfProcessLexemes: `${calculateProgress(sumOfLexemes, lexemesProcessedNowToken.length)}%`,
+      cantOfTotalLexemes: tableOfSymbols[index].lexemes.length + lexemesProcessedNowToken.length,
+      cantOfLexemesBeforeToRead: tableOfSymbols[index].lexemes.length,
+      cantOfNewLexemes: lexemesProcessedNowToken.length,
+      outputFile: '',
+    }
+
+    results.push(resultReport)
+  });
+
+  return results
+}
+
+
