@@ -60,7 +60,9 @@
         <Column field="cantOfLexemesBeforeToRead" header="Cantidad de lexemas previa a la lectura" header-style="text-align:center" style="width: 12%"/>
         <Column field="cantOfNewLexemes" header="Cantidad de lexemas nuevos" header-style="text-align:center" style="width: 12%"/>
       </DataTable>
-      <Button class="btn-save" label="Archivo de tokens generado" icon="pi pi-file" @click="showToast" />
+      <Tag severity="success" value="">El archivo de salida es: {{ outputPathFile }}</Tag>
+      <!-- <Message severity="success"></Message> -->
+      <!-- <Button class="btn-save" label="Archivo de tokens generado" icon="pi pi-file" @click="showToast" /> -->
     </div>
   </main>
 </template>
